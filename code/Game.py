@@ -5,7 +5,7 @@ from code.Laser import Laser
 from code.Obstacle import Obstacle
 from code.SpaceShip import SpaceShip
 from code.Obstacle import grid
-from code.Alien import Alien
+from code.Alien import Alien, MysteryShip
 
 class Game:
 	def __init__(self):
@@ -20,13 +20,14 @@ class Game:
 		self.create_aliens()
 		self.alien_direction = 1
 		self.alien_lasers_group = pygame.sprite.Group()
+		self.mistery_ship_group = pygame.sprite.GroupSingle()
 
 
 	def run(self):
-		# var
-
 		self.spaceship_group.add(self.spaceship)
+
 		pygame.time.set_timer(SHOOT_LASER, 300)
+		pygame.time.set_timer(MYSTERYSHIP, random.randint(4000,8000))
 
 		while True:
 			# Checking for events
@@ -37,6 +38,9 @@ class Game:
 				if event.type == SHOOT_LASER:
 					self.alien_shoot_laser()
 
+				if event.type == MYSTERYSHIP:
+					self.create_mystery_ship()
+					pygame.time.set_timer(MYSTERYSHIP, random.randint(4000,8000))
 
 			# To Draw
 			self.window.fill(COLOR_GREY)
@@ -45,12 +49,13 @@ class Game:
 			for obstacle in self.obstacles: obstacle.blocks_group.draw(self.window)
 			self.aliens.draw(self.window)
 			self.alien_lasers_group.draw(self.window)
+			self.mistery_ship_group.draw(self.window)
 
 			# To update
 			self.spaceship_group.update()
 			self.move_aliens()
 			self.alien_lasers_group.update()
-
+			self.mistery_ship_group.update()
 			pygame.display.update()
 			self.clock.tick(60)
 
@@ -99,3 +104,6 @@ class Game:
 			random_alien = random.choice(self.aliens.sprites()) # it selects a random alien
 			laser_sprite = Laser(random_alien.rect.center,-6, SCREEN_HEIGHT)
 			self.alien_lasers_group.add(laser_sprite)
+
+	def create_mystery_ship(self):
+		self.mistery_ship_group.add(MysteryShip(SCREEN_WIDTH))
