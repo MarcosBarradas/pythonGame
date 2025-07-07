@@ -1,6 +1,7 @@
 import pygame, sys
 
 from code.Const import *
+
 from code.SpaceShip import SpaceShip
 
 class Game:
@@ -9,11 +10,13 @@ class Game:
 		self.window = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 		pygame.display.set_caption("VOADORES ESPACIAIS")
 		self.clock = pygame.time.Clock()
-		self.spaceShip = SpaceShip(SCREEN_WIDTH, SCREEN_HEIGHT)
-		self.spaceShip_group = pygame.sprite.GroupSingle()
+
 
 	def run(self):
-		self.spaceShip_group.add(self.spaceShip)
+		spaceship = SpaceShip(SCREEN_WIDTH, SCREEN_HEIGHT)
+		spaceship_group = pygame.sprite.GroupSingle()
+		spaceship_group.add(spaceship)
+
 		while True:
 			# Checking for events
 			for event in pygame.event.get():
@@ -24,10 +27,12 @@ class Game:
 
 			# To Draw
 			self.window.fill(COLOR_GREY)
-			self.spaceShip_group.draw(self.window)
+			spaceship_group.draw(self.window)
+			spaceship_group.sprite.lasers_group.draw(self.window)
 
 			# To update
-			self.spaceShip_group.update()
+			spaceship_group.update()
+
 
 			pygame.display.update()
 			self.clock.tick(60)
