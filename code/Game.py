@@ -13,22 +13,24 @@ class Game:
 		self.window = pygame.display.set_mode((SCREEN_WIDTH + OFFSET, SCREEN_HEIGHT + 2 * OFFSET))
 		pygame.display.set_caption("VOADORES ESPACIAIS")
 		self.clock = pygame.time.Clock()
-		self.spaceship = SpaceShip()
-		self.spaceship_group = pygame.sprite.GroupSingle()
-		self.obstacles = self.create_obstacles()
-		self.aliens = pygame.sprite.Group()
+		self.player_ship = SpaceShip()
+		self.player_group = pygame.sprite.GroupSingle()
+		self.barriers = self.create_obstacles()
+		self.invaders_group = pygame.sprite.Group()
 		self.create_aliens()
-		self.alien_direction = 1
-		self.alien_lasers_group = pygame.sprite.Group()
-		self.mistery_ship_group = pygame.sprite.GroupSingle()
+		self.invader_direction = 1
+		self.invader_shots = pygame.sprite.Group()
+		self.ufo_group = pygame.sprite.GroupSingle()
 		self.lives = 3
 		self.running = True
 		self.score = 0
 		self.highscore = 0
-
+		self.explosion_sound = pygame.mixer.Sound("./assets/explosion.mp3")
+		pygame.mixer.music.load("./assets/music.mp3")
+		pygame.mixer.music.play(-1)
 
 	def run(self):
-		self.spaceship_group.add(self.spaceship)
+		self.player_group.add(self.player_ship)
 		font = pygame.font.Font("./font/PixelifySans-Bold.ttf", 40)
 		level_surface = font.render("LEVEL 01", False, COLOR_GREEN)
 		game_over_surface = font.render("GAME OVER", False, COLOR_RED)
@@ -38,23 +40,20 @@ class Game:
 		pygame.time.set_timer(MYSTERYSHIP, random.randint(5050,9090))
 
 		while True:
-			# Checking for events
 			for event in pygame.event.get():
 				if event.type == pygame.QUIT:
 					pygame.quit()
 					sys.exit()
 				if event.type == SHOOT_LASER and self.running:
-					self.alien_shoot_laser()
-
+					self.invader_shoot()
 				if event.type == MYSTERYSHIP:
-					self.create_mystery_ship()
+					self.spawn_ufo()
 					pygame.time.set_timer(MYSTERYSHIP, random.randint(5050,9090))
 
 			keys = pygame.key.get_pressed()
-			if keys[pygame.K_SPACE] and self.running == False:
+			if keys[pygame.K_SPACE] and not self.running:
 				self.reset()
 
-			# To Draw
 			self.window.fill(COLOR_GREY)
 			self.window.blit(pygame.transform.scale(pygame.image.load("./assets/1.png").convert(),
 			                                        (SCREEN_WIDTH + OFFSET, SCREEN_HEIGHT + 2 * OFFSET)),
@@ -69,141 +68,132 @@ class Game:
 
 			x = 50
 			for life in range(self.lives):
-				self.window.blit(self.spaceship_group.sprite.image, (x, 735))
+				self.window.blit(self.player_group.sprite.image, (x, 735))
 				x += 50
+
 			self.window.blit(score_text_surface, (50,15,50,50))
-			formatting_score = str(self.score).zfill(5)
-			score_surface = font.render(formatting_score , False, COLOR_GREEN)
-			self.window.blit(score_surface, (180,15,100,50))
+			formatted_score = str(self.score).zfill(5)
+			self.window.blit(font.render(formatted_score, False, COLOR_GREEN), (180,15,100,50))
+
 			self.window.blit(highscore_text_surface, (550,15,50,50))
-			formatting_score = str(self.highscore).zfill(5)
-			highscore_surface = font.render(formatting_score , False, COLOR_GREEN)
-			self.window.blit(highscore_surface, (630,50,100,50))
+			formatted_high = str(self.highscore).zfill(5)
+			self.window.blit(font.render(formatted_high, False, COLOR_GREEN), (630,50,100,50))
 
-			self.spaceship_group.draw(self.window)
-			self.spaceship_group.sprite.lasers_group.draw(self.window)
-			for obstacle in self.obstacles: obstacle.blocks_group.draw(self.window)
-			self.aliens.draw(self.window)
-			self.alien_lasers_group.draw(self.window)
-			self.mistery_ship_group.draw(self.window)
+			self.player_group.draw(self.window)
+			self.player_group.sprite.lasers_group.draw(self.window)
+			for block in self.barriers:
+				block.blocks_group.draw(self.window)
+			self.invaders_group.draw(self.window)
+			self.invader_shots.draw(self.window)
+			self.ufo_group.draw(self.window)
 
-			# To
 			pygame.display.update()
-			if self.running: # Condition stop the game if the live counter is 0
-				self.spaceship_group.update()
-				self.move_aliens()
-				self.alien_lasers_group.update()
-				self.mistery_ship_group.update()
 
+			if self.running:
+				self.player_group.update()
+				self.move_invaders()
+				self.invader_shots.update()
+				self.ufo_group.update()
 				self.clock.tick(60)
 				self.check_for_collisions()
 
 	@staticmethod
 	def create_obstacles():
-		obstacle_width = len(grid[0]) * 3  # Calculate the length of the obstacle
-		gap = (SCREEN_WIDTH + OFFSET - (4 * obstacle_width)) / 5  # Calculates the gap between obstacles
-		obstacles = []
-
+		obstacle_width = len(grid[0]) * 3
+		gap = (SCREEN_WIDTH + OFFSET - (4 * obstacle_width)) / 5
+		barriers = []
 		for i in range(4):
 			off_x = (i + 1) * gap + i * obstacle_width
-			obstacle = Obstacle(off_x, SCREEN_HEIGHT - 200)
-			obstacles.append(obstacle)
-
-		return obstacles
-
+			barriers.append(Obstacle(off_x, SCREEN_HEIGHT - 200))
+		return barriers
 
 	def create_aliens(self):
-		for i in range(5):
-			for j in range(11):
-				alien_type = 3 if i == 0 else (2 if i in (1, 2) else 1)
-				alien = Alien(alien_type, 75 + j * 55, 110 + i * 55)
-				self.aliens.add(alien)
+		for row in range(5):
+			for col in range(11):
+				alien_type = 3 if row == 0 else (2 if row in (1, 2) else 1)
+				alien = Alien(alien_type, 75 + col * 55, 110 + row * 55)
+				self.invaders_group.add(alien)
 
-	def move_aliens(self):
-		self.aliens.update(self.alien_direction)
-		alien_sprites = self.aliens.sprites()
-		for alien in alien_sprites:
+	def move_invaders(self):
+		self.invaders_group.update(self.invader_direction)
+		for alien in self.invaders_group.sprites():
 			if alien.rect.right >= SCREEN_WIDTH:
-				self.alien_direction = -1
-				self.alien_move_down(2)
+				self.invader_direction = -1
+				self.invader_move_down(2)
 				break
 			elif alien.rect.left <= 50:
-				self.alien_direction = 1
-				self.alien_move_down(2)
+				self.invader_direction = 1
+				self.invader_move_down(2)
 				break
 
+	def invader_move_down(self, distance):
+		for alien in self.invaders_group.sprites():
+			alien.rect.y += distance
 
-	def alien_move_down(self, distance):
-		if self.aliens:
-			for alien in self.aliens.sprites():
-				alien.rect.y += distance
+	def invader_shoot(self):
+		if self.invaders_group.sprites():
+			attacker = random.choice(self.invaders_group.sprites())
+			laser = Laser(attacker.rect.center, -6, SCREEN_HEIGHT)
+			self.invader_shots.add(laser)
 
-	def alien_shoot_laser(self):
-		if self.aliens.sprites():
-			random_alien = random.choice(self.aliens.sprites()) # it selects a random alien
-			laser_sprite = Laser(random_alien.rect.center,-6, SCREEN_HEIGHT)
-			self.alien_lasers_group.add(laser_sprite)
+	def spawn_ufo(self):
+		self.ufo_group.add(MysteryShip(SCREEN_WIDTH))
 
-	def create_mystery_ship(self):
-		self.mistery_ship_group.add(MysteryShip(SCREEN_WIDTH))
-
-	# COLLISION
 	def check_for_collisions(self):
-		# Spaceship
-		if self.spaceship_group.sprite.lasers_group:
-			for laser_sprite in self.spaceship_group.sprite.lasers_group:
-				aliens_hit = pygame.sprite.spritecollide(laser_sprite, self.aliens, True)
-				if aliens_hit:
-					for alien in aliens_hit:
+		# Player Lasers
+		if self.player_group.sprite.lasers_group:
+			for laser in self.player_group.sprite.lasers_group:
+				hits = pygame.sprite.spritecollide(laser, self.invaders_group, True)
+				if hits:
+					for alien in hits:
 						self.score += 10
-						laser_sprite.kill()
-				if pygame.sprite.spritecollide(laser_sprite, self.mistery_ship_group, True):
+						self.explosion_sound.play()
+						laser.kill()
+				if pygame.sprite.spritecollide(laser, self.ufo_group, True):
 					self.score += 500
-					laser_sprite.kill()
+					self.explosion_sound.play()
+					laser.kill()
+				for block in self.barriers:
+					if pygame.sprite.spritecollide(laser, block.blocks_group, True):
+						laser.kill()
 
-				for obstacle in self.obstacles:
-					if pygame.sprite.spritecollide(laser_sprite, obstacle.blocks_group, True):
-						laser_sprite.kill()
+		# Invader Lasers
+		for laser in self.invader_shots:
+			if pygame.sprite.spritecollide(laser, self.player_group, False):
+				laser.kill()
+				self.lives -= 1
+				if self.lives == 0:
+					self.trigger_gameover()
+			for block in self.barriers:
+				if pygame.sprite.spritecollide(laser, block.blocks_group, True):
+					laser.kill()
 
-		# Alien Lasers
-		if self.alien_lasers_group:
-			for laser_sprite in self.alien_lasers_group:
-				if pygame.sprite.spritecollide(laser_sprite, self.spaceship_group, False):
-					laser_sprite.kill()
-					self.lives -= 1
-					if self.lives == 0:
-						self.gameover()
+		# Invaders vs Player / Obstacles
+		for alien in self.invaders_group:
+			for block in self.barriers:
+				pygame.sprite.spritecollide(alien, block.blocks_group, True)
+			if pygame.sprite.spritecollide(alien, self.player_group, False):
+				self.trigger_gameover()
 
-				for obstacle in self.obstacles:
-					if pygame.sprite.spritecollide(laser_sprite, obstacle.blocks_group, True):
-						laser_sprite.kill()
-		if self.aliens:
-			for alien in self.aliens:
-				for obstacle in self.obstacles:
-					pygame.sprite.spritecollide(alien, obstacle.blocks_group, True)
-
-				if pygame.sprite.spritecollide(alien, self.spaceship_group, False):
-					self.gameover()
-
-	def gameover(self):
-		self.checking_highscore()
+	def trigger_gameover(self):
+		self.update_highscore()
 		self.running = False
 
 	def reset(self):
 		self.running = True
 		self.lives = 3
-		self.spaceship_group.sprite.reset()
-		self.aliens.empty()
-		self.alien_lasers_group.empty()
-		self.mistery_ship_group.empty()
-		self.obstacles = self.create_obstacles()
+		self.player_group.sprite.reset()
+		self.invaders_group.empty()
+		self.invader_shots.empty()
+		self.ufo_group.empty()
+		self.barriers = self.create_obstacles()
 		self.score = 0
 		self.create_aliens()
-		self.alien_direction = 1
-		self.spaceship.laser_ready = False
-		self.spaceship.laser_time = 0
-		self.spaceship.laser_delay = 300
+		self.invader_direction = 1
+		self.player_ship.laser_ready = False
+		self.player_ship.laser_time = 0
+		self.player_ship.laser_delay = 300
 
-	def checking_highscore(self):
+	def update_highscore(self):
 		if self.score > self.highscore:
 			self.highscore = self.score

@@ -13,6 +13,7 @@ class SpaceShip(pygame.sprite.Sprite):
         self.laser_time = 0
         self.laser_delay = 300
         self.lasers_group = pygame.sprite.Group()
+        self.laser_sound = pygame.mixer.Sound("./assets/shoot.mp3")
 
     def get_user_input(self):
         keys = pygame.key.get_pressed()
@@ -25,6 +26,7 @@ class SpaceShip(pygame.sprite.Sprite):
             laser = Laser(self.rect.center, 5, SCREEN_HEIGHT - 100)
             self.lasers_group.add(laser)
             self.laser_time = pygame.time.get_ticks() # reset time
+            self.laser_sound.play()
 
     def update(self):
         self.get_user_input()
