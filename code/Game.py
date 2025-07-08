@@ -24,6 +24,7 @@ class Game:
 		self.lives = 3
 		self.running = True
 		self.score = 0
+		self.highscore = 0
 
 
 	def run(self):
@@ -32,6 +33,7 @@ class Game:
 		level_surface = font.render("LEVEL 01", False, COLOR_GREEN)
 		game_over_surface = font.render("GAME OVER", False, COLOR_RED)
 		score_text_surface = font.render("SCORE", False, COLOR_GREEN)
+		highscore_text_surface = font.render("HIGHSCORE", False, COLOR_GREEN)
 		pygame.time.set_timer(SHOOT_LASER, 300)
 		pygame.time.set_timer(MYSTERYSHIP, random.randint(5050,9090))
 
@@ -70,8 +72,14 @@ class Game:
 				self.window.blit(self.spaceship_group.sprite.image, (x, 735))
 				x += 50
 			self.window.blit(score_text_surface, (50,15,50,50))
-			score_surface = font.render(str(self.score), False, COLOR_GREEN)
+			formatting_score = str(self.score).zfill(5)
+			score_surface = font.render(formatting_score , False, COLOR_GREEN)
 			self.window.blit(score_surface, (180,15,100,50))
+			self.window.blit(highscore_text_surface, (550,15,50,50))
+			formatting_score = str(self.highscore).zfill(5)
+			highscore_surface = font.render(formatting_score , False, COLOR_GREEN)
+			self.window.blit(highscore_surface, (630,50,100,50))
+
 			self.spaceship_group.draw(self.window)
 			self.spaceship_group.sprite.lasers_group.draw(self.window)
 			for obstacle in self.obstacles: obstacle.blocks_group.draw(self.window)
@@ -178,6 +186,7 @@ class Game:
 					self.gameover()
 
 	def gameover(self):
+		self.checking_highscore()
 		self.running = False
 
 	def reset(self):
@@ -194,3 +203,7 @@ class Game:
 		self.spaceship.laser_ready = False
 		self.spaceship.laser_time = 0
 		self.spaceship.laser_delay = 300
+
+	def checking_highscore(self):
+		if self.score > self.highscore:
+			self.highscore = self.score
