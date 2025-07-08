@@ -23,6 +23,7 @@ class Game:
 		self.mistery_ship_group = pygame.sprite.GroupSingle()
 		self.lives = 3
 		self.running = True
+		self.score = 0
 
 
 	def run(self):
@@ -30,6 +31,7 @@ class Game:
 		font = pygame.font.Font("./font/PixelifySans-Bold.ttf", 40)
 		level_surface = font.render("LEVEL 01", False, COLOR_GREEN)
 		game_over_surface = font.render("GAME OVER", False, COLOR_RED)
+		score_text_surface = font.render("SCORE", False, COLOR_GREEN)
 		pygame.time.set_timer(SHOOT_LASER, 300)
 		pygame.time.set_timer(MYSTERYSHIP, random.randint(5050,9090))
 
@@ -63,9 +65,13 @@ class Game:
 			else:
 				self.window.blit(game_over_surface, (550,735,10,10))
 
-			for lie in range(self.lives):
-				pass
-
+			x = 50
+			for life in range(self.lives):
+				self.window.blit(self.spaceship_group.sprite.image, (x, 735))
+				x += 50
+			self.window.blit(score_text_surface, (50,15,50,50))
+			score_surface = font.render(str(self.score), False, COLOR_GREEN)
+			self.window.blit(score_surface, (180,15,100,50))
 			self.spaceship_group.draw(self.window)
 			self.spaceship_group.sprite.lasers_group.draw(self.window)
 			for obstacle in self.obstacles: obstacle.blocks_group.draw(self.window)
@@ -138,9 +144,13 @@ class Game:
 		# Spaceship
 		if self.spaceship_group.sprite.lasers_group:
 			for laser_sprite in self.spaceship_group.sprite.lasers_group:
-				if pygame.sprite.spritecollide(laser_sprite, self.aliens, True):
-					laser_sprite.kill()
+				aliens_hit = pygame.sprite.spritecollide(laser_sprite, self.aliens, True)
+				if aliens_hit:
+					for alien in aliens_hit:
+						self.score += 10
+						laser_sprite.kill()
 				if pygame.sprite.spritecollide(laser_sprite, self.mistery_ship_group, True):
+					self.score += 500
 					laser_sprite.kill()
 
 				for obstacle in self.obstacles:
@@ -178,6 +188,7 @@ class Game:
 		self.alien_lasers_group.empty()
 		self.mistery_ship_group.empty()
 		self.obstacles = self.create_obstacles()
+		self.score = 0
 		self.create_aliens()
 		self.alien_direction = 1
 		self.spaceship.laser_ready = False
