@@ -1,6 +1,6 @@
 import pygame, random
 
-from code.Const import SCREEN_WIDTH
+from code.Const import SCREEN_WIDTH, OFFSET
 
 
 class Alien(pygame.sprite.Sprite):
@@ -18,7 +18,7 @@ class MysteryShip(pygame.sprite.Sprite):
 		super().__init__()
 		self.image = pygame.image.load("./assets/extra.png")
 
-		x = random.choice([0, SCREEN_WIDTH - self.image.get_width()])
+		x = random.choice([OFFSET / 2, SCREEN_WIDTH - self.image.get_width()])
 		if x == 0:
 			self.speed = 2
 		else:
@@ -28,5 +28,5 @@ class MysteryShip(pygame.sprite.Sprite):
 
 	def update(self):
 		self.rect.x += self.speed
-		if self.rect.right > SCREEN_WIDTH or self.rect.left < 0:
+		if self.rect.right > SCREEN_WIDTH or self.rect.left < 50:
 			self.kill()

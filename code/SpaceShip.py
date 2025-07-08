@@ -1,13 +1,13 @@
 import pygame
+
+from code.Const import SCREEN_WIDTH, SCREEN_HEIGHT, OFFSET
 from code.Laser import Laser
 
 class SpaceShip(pygame.sprite.Sprite):
-    def __init__(self, screen_width, screen_height):
+    def __init__(self):
         super().__init__()
-        self.screen_width = screen_width
-        self.screen_height = screen_height
         self.image = pygame.image.load("./assets/player.png")
-        self.rect = self.image.get_rect(midbottom = (self.screen_width / 2, self.screen_height - 100))
+        self.rect = self.image.get_rect(midbottom = ((SCREEN_WIDTH + OFFSET) / 2, SCREEN_HEIGHT - 100))
         self.speed = 5
         self.laser_ready = False
         self.laser_time = 0
@@ -22,7 +22,7 @@ class SpaceShip(pygame.sprite.Sprite):
             self.rect.x += self.speed
         if keys[pygame.K_SPACE] and self.laser_ready:
             self.laser_ready = False
-            laser = Laser(self.rect.center, 5, self.screen_height - 100)
+            laser = Laser(self.rect.center, 5, SCREEN_HEIGHT - 100)
             self.lasers_group.add(laser)
             self.laser_time = pygame.time.get_ticks() # reset time
 
@@ -33,10 +33,10 @@ class SpaceShip(pygame.sprite.Sprite):
         self.recharge_laser()
 
     def constrain_movement(self):
-        if self.rect.right > self.screen_width:
-            self.rect.right = self.screen_width
-        if self.rect.left < 0:
-            self.rect.left = 0
+        if self.rect.right > SCREEN_WIDTH:
+            self.rect.right = SCREEN_WIDTH
+        if self.rect.left < OFFSET:
+            self.rect.left = OFFSET
 
     def recharge_laser(self):
         if not self.laser_ready:
@@ -44,3 +44,7 @@ class SpaceShip(pygame.sprite.Sprite):
             # when time exceeds 300 ms
             if current_time - self.laser_time >= self.laser_delay:
                 self.laser_ready = True
+
+    def reset(self):
+        self.rect = self.image.get_rect(midbottom = ((SCREEN_WIDTH + OFFSET)/ 2, SCREEN_HEIGHT - 100))
+        self.lasers_group.empty()
